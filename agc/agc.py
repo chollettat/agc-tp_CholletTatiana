@@ -117,7 +117,19 @@ def dereplication_fulllength(amplicon_file, minseqlen, mincount):
 
 ## 2- Recherche de séquences chimériques par approche “de novo”
 def get_chunks(sequence, chunk_size):
-    pass
+    """
+    ----------------------
+    :Parameters:
+        sequence: sequence
+        chunk_size: size of sequence
+    Returns: list of sub-sequences of size l not overlapping, at least 4 segments must be obtained per sequence
+    """
+    chunks = []
+    for i in (range(0, len(sequence), chunk_size)):
+        if i+chunk_size<=len(sequence):
+            chunks.append(sequence[i:i+chunk_size])
+    if len(chunks)>=4: #4 segments per sequence
+        return chunks
 
 def get_unique(ids):
     return {}.fromkeys(ids).keys()
@@ -141,13 +153,25 @@ def cut_kmer(sequence, kmer_size):
 
 
 def get_identity(alignment_list):
-    pass
+    """
+    Calculate the percentage of identity between the two sequences
+    :Parameters:
+        alignment_list: alignment
+    Returns: percentage of identify with 2 digits after the decimal point
+    """
+    count = 0
+    len_list = len(alignment_list[0])
+    for i in range(len_list):
+        if alignment_list[0][i] == alignment_list[1][i]:
+            count += 1
+    id = count/len_list * 100
+    return id
 
 
 def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     pass
 
-
+## 3 - Regroupement glouton
 def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     pass
 
@@ -157,7 +181,12 @@ def fill(text, width=80):
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
 def write_OTU(OTU_list, output_file):
-    pass
+    file = open(output_file, "w")
+    index = 1
+    for OTU in enumerate(OTU_list):
+        file.write(">OTU_"+str(index)+" occurence:"+str(OTU[1])+"\n")
+        file.write(fill(str(OTU[0])+"\n"))
+        index += 1
 
 
 #==============================================================
