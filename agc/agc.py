@@ -21,15 +21,15 @@ import statistics
 from collections import Counter
 # https://github.com/briney/nwalign3
 # ftp://ftp.ncbi.nih.gov/blast/matrices/
-import nwalign3 as nw
+#import nwalign3 as nw
 
-__author__ = "Your Name"
+__author__ = "Tatiana Chollet"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["Tatiana Chollet"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
+__maintainer__ = "Tatiana Chollet"
+__email__ = "chollettat@eisti.eu"
 __status__ = "Developpement"
 
 
@@ -69,14 +69,53 @@ def get_arguments():
                         default="OTU.fasta", help="Output file")
     return parser.parse_args()
 
+
+
+## 1- Dé-duplication en séquence “complète”
 def read_fasta(amplicon_file, minseqlen):
-    pass
+    """
+    Read the file
+    :Parameters:
+        amplicon_file: file fasta.gz
+        minseqlen: minimum length of sequences
+    Returns: sequences generator
+    """
+    file = gzip.open(amplicon_file, "rt") #gzip because of gz extension
+    sequence = ""
+    for line in file:
+        if line.startswith(">"):
+            if len(sequence)>= minseqlen:
+                yield sequence
+            sequence = ""
+        else:
+            sequence = sequence + line.strip() #remove whitespace
+    yield sequence
 
 
 def dereplication_fulllength(amplicon_file, minseqlen, mincount):
-    pass
+    """
+    Create a dictionary containing the unique amplicons
+    :Parameters:
+        amplicon_file: file fasta.gz
+        minseqlen: minimum length of sequences
+        mincount: minimum sequence count
+    Returns: generator of unique sequences and their occurrence
+    """
+    dict_sequence = {} #We use {} to use a dictionnary
+    list_sequence = read_fasta(amplicon_file, minseqlen)
+
+    for sequence in list_sequence:
+        if sequence in dict_sequence: #if the sequence is in the dico, then we count +1 occurence
+            dict_sequence[sequence] += 1
+        else :
+            dict_sequence[sequence] = 1
+    for seq, occ in sorted(dict_sequence.items(), key=lambda item: item[1], reverse = True): #item: item[1] sorted on occurence in dict_sequence, reverse = True return in descending order
+        if occ >= mincount:
+            yield [seq, occ]
 
 
+
+## 2- Recherche de séquences chimériques par approche “de novo”
 def get_chunks(sequence, chunk_size):
     pass
 
@@ -87,17 +126,31 @@ def get_unique(ids):
 def common(lst1, lst2): 
     return list(set(lst1) & set(lst2))
 
+
 def cut_kmer(sequence, kmer_size):
-    pass
+    """
+    ----------------------
+    :Parameters:
+        sequence: sequence
+        kmer_size: size of kmer
+    Returns: k-mer generator
+    """
+    for comp in range ( (len(sequence)+1) - kmer_size):
+        kmer = sequence[comp : comp + kmer_size]
+        yield kmer
+
 
 def get_identity(alignment_list):
     pass
 
+
 def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     pass
 
+
 def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     pass
+
 
 def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
@@ -105,6 +158,8 @@ def fill(text, width=80):
 
 def write_OTU(OTU_list, output_file):
     pass
+
+
 #==============================================================
 # Main program
 #==============================================================
@@ -114,7 +169,8 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-
+    OTU_list = abundance_greedy_clustering(args.amplicon_file, args.minseqlen, args.mincount, args.chunk_size, args.kmer_size)
+    write_OTU(OTU_list, args.output_file)
 
 if __name__ == '__main__':
     main()
