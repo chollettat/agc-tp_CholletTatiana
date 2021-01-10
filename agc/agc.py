@@ -17,8 +17,8 @@ import argparse
 import sys
 import os
 import gzip
-import statistics
-from collections import Counter
+#import statistics
+#from collections import Counter
 # https://github.com/briney/nwalign3
 # ftp://ftp.ncbi.nih.gov/blast/matrices/
 #import nwalign3 as nw
@@ -55,7 +55,7 @@ def get_arguments():
     parser = argparse.ArgumentParser(description=__doc__, usage=
                                      "{0} -h"
                                      .format(sys.argv[0]))
-    parser.add_argument('-i', '-amplicon_file', dest='amplicon_file', type=isfile, required=True, 
+    parser.add_argument('-i', '-amplicon_file', dest='amplicon_file', type=isfile, required=True,
                         help="Amplicon is a compressed fasta file (.fasta.gz)")
     parser.add_argument('-s', '-minseqlen', dest='minseqlen', type=int, default = 400,
                         help="Minimum sequence length for dereplication")
@@ -109,7 +109,8 @@ def dereplication_fulllength(amplicon_file, minseqlen, mincount):
             dict_sequence[sequence] += 1
         else :
             dict_sequence[sequence] = 1
-    for seq, occ in sorted(dict_sequence.items(), key=lambda item: item[1], reverse = True): #item: item[1] sorted on occurence in dict_sequence, reverse = True return in descending order
+    for seq, occ in sorted(dict_sequence.items(), key=lambda item: item[1], reverse = True):
+        #item: item[1] sorted on occurence in dict, reverse = True for descending order
         if occ >= mincount:
             yield [seq, occ]
 
@@ -122,7 +123,8 @@ def get_chunks(sequence, chunk_size):
     :Parameters:
         sequence: sequence
         chunk_size: size of sequence
-    Returns: list of sub-sequences of size l not overlapping, at least 4 segments must be obtained per sequence
+    Returns: list of sub-sequences of size l not overlapping,
+             at least 4 segments must be obtained per sequence
     """
     chunks = []
     for i in (range(0, len(sequence), chunk_size)):
@@ -132,10 +134,23 @@ def get_chunks(sequence, chunk_size):
         return chunks
 
 def get_unique(ids):
+    """
+    ----------------------
+    :Parameters:
+        ids: list
+    Returns: unique elements of a list
+    """
     return {}.fromkeys(ids).keys()
 
 
-def common(lst1, lst2): 
+def common(lst1, lst2):
+    """
+    ----------------------
+    :Parameters:
+        lst1: first list
+        lst2: second list
+    Returns: common elements between 2 lists
+    """
     return list(set(lst1) & set(lst2))
 
 
@@ -164,16 +179,38 @@ def get_identity(alignment_list):
     for i in range(len_list):
         if alignment_list[0][i] == alignment_list[1][i]:
             count += 1
-    id = count/len_list * 100
-    return id
+    identity = count/len_list * 100
+    return identity
 
 
 def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
+    """
+    :Parameters:
+        amplicon_file: file fasta.gz
+        minseqlen: minimum length of sequences
+        mincount: minimum sequence count
+        chunk_size: size of sequence
+        kmer_size: size of kmer
+    Returns: non-chimeric sequence generator
+    """
     pass
 
 ## 3 - Regroupement glouton
 def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
-    pass
+    #doesn't pass without chimera_removal
+    """
+    :Parameters:
+        amplicon_file: file fasta.gz
+        minseqlen: minimum length of sequences
+        mincount: minimum sequence count
+        chunk_size: size of sequence
+        kmer_size: size of kmer
+    Returns: OTU_list
+    """
+    OTU_list = []
+    for search in chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
+        OTU_list.append(search)
+    return OTU_list
 
 
 def fill(text, width=80):
@@ -181,6 +218,12 @@ def fill(text, width=80):
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
 def write_OTU(OTU_list, output_file):
+    """
+    Save OTUs in file
+    :Parameters:
+        OTU_list: list of OTU
+        output_file: path for outpute file
+    """
     file = open(output_file, "w")
     index = 1
     for OTU in enumerate(OTU_list):
@@ -198,7 +241,8 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-    OTU_list = abundance_greedy_clustering(args.amplicon_file, args.minseqlen, args.mincount, args.chunk_size, args.kmer_size)
+    OTU_list = abundance_greedy_clustering(args.amplicon_file, args.minseqlen,
+                                           args.mincount, args.chunk_size, args.kmer_size)
     write_OTU(OTU_list, args.output_file)
 
 if __name__ == '__main__':
